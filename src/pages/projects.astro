@@ -1,0 +1,81 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Projects — Arian Lopez" description="Open source projects by Arian Lopez.">
+  <section class="projects-page">
+    <h1>Projects</h1>
+    <p class="projects-intro">Open source tools I've built.</p>
+
+    <div class="project-card">
+      <div class="project-header">
+        <span class="project-name">Trabuco</span>
+        <span class="project-tag">Open Source</span>
+      </div>
+      <p class="project-description">
+        A CLI built in Go that generates production-ready, multi-module Java Maven projects and autonomously migrates legacy Spring Boot applications to clean modular architecture using AI.
+      </p>
+      <div class="project-details">
+        <h3>Key features</h3>
+        <ul>
+          <li><strong>Project generation</strong> &mdash; Scaffolds multi-module Java Maven projects with 10+ configurable modules, eliminating hours of greenfield setup.</li>
+          <li><strong>AI migration pipeline</strong> &mdash; A 10-stage pipeline using Anthropic's SDK that converts legacy Spring Boot apps to modular architecture, transforming JPA to Spring Data JDBC, generating SQL migrations, and restructuring services with checkpoint recovery and rollback.</li>
+          <li><strong>Dual-layer MCP integration</strong> &mdash; The CLI exposes 11 MCP tools for AI agents to create, migrate, and inspect projects. Generated projects include their own MCP servers, enabling a two-tier AI-native development ecosystem.</li>
+        </ul>
+      </div>
+      <div class="project-tech">
+        <span class="tech-tag">Go</span>
+        <span class="tech-tag">Anthropic SDK</span>
+        <span class="tech-tag">MCP</span>
+        <span class="tech-tag">Java</span>
+        <span class="tech-tag">Maven</span>
+        <span class="tech-tag">Spring Boot</span>
+      </div>
+      <div class="project-links">
+        <a href="https://github.com/arianlopezc/Trabuco" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .projects-page {
+    padding: 1rem 0 2rem;
+  }
+
+  .projects-intro {
+    color: var(--color-text-secondary);
+    margin-bottom: 2rem;
+  }
+
+  .project-details {
+    margin-bottom: 1.2rem;
+  }
+
+  .project-details h3 {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .project-details ul {
+    padding-left: 1.2rem;
+    font-size: 0.95rem;
+  }
+
+  .project-details li {
+    margin-bottom: 0.6rem;
+    line-height: 1.6;
+  }
+
+  .project-links {
+    margin-top: 1rem;
+  }
+
+  .project-links a {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+</style>

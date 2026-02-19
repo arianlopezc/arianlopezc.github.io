@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const posts = [
+  {
+    title: 'I Built a CLI That Generates Production-Ready Java Projects in Seconds',
+    slug: 'trabuco-cli-generates-java-projects',
+    date: '2026-02-14',
+    excerpt: 'Why AI-generated projects fail teams, and what consistency actually looks like.',
+  },
+  {
+    title: 'Rate Limiting a Tenant\'s Import Data with a Leaky Bucket Strategy',
+    slug: 'rate-limiting-leaky-bucket-strategy',
+    date: '2023-05-03',
+    excerpt: 'Repurposing a network algorithm to protect a multi-tenant import pipeline.',
+  },
+  {
+    title: 'Accelerating CRUD Async Operations with Redis and Queues',
+    slug: 'accelerating-crud-async-redis-queues',
+    date: '2023-01-15',
+    excerpt: 'Write-back caching with Redis and job queues as a database accelerator.',
+  },
+  {
+    title: 'Lessons Learned Using Spring Data Redis',
+    slug: 'lessons-learned-spring-data-redis',
+    date: '2021-10-05',
+    excerpt: 'Debugging a hidden memory leak caused by Spring Data Redis internals.',
+  },
+];
+---
+
+<BaseLayout title="Writing — Arian Lopez" description="Articles on distributed systems, Redis, and AI-native developer tooling.">
+  <section class="blog-page">
+    <h1>Writing</h1>
+    <p class="blog-intro">Production problems and the solutions that stuck.</p>
+
+    <ul class="post-list">
+      {posts.map((post) => (
+        <li class="post-item">
+          <a href={`/blog/${post.slug}`}>
+            <span class="post-title">{post.title}</span>
+            <span class="post-date">{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <p class="post-excerpt">{post.excerpt}</p>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  .blog-page {
+    padding: 1rem 0 2rem;
+  }
+
+  .blog-intro {
+    color: var(--color-text-secondary);
+    margin-bottom: 2rem;
+  }
+</style>

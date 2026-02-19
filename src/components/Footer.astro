@@ -1,0 +1,50 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/arianlopezc" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://linkedin.com/in/arian-l-1806687a" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://medium.com/@arian.lopezc" target="_blank" rel="noopener">Medium</a>
+    <a href="mailto:arian.lopezc@gmail.com">Email</a>
+  </div>
+  <p class="copyright">&copy; {year} Arian Lopez</p>
+</footer>
+
+<style>
+  footer {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+    text-align: center;
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .footer-links a {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+  }
+
+  .footer-links a:hover {
+    color: var(--color-accent);
+  }
+
+  .copyright {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  @media (max-width: 640px) {
+    footer {
+      padding: 2rem 1rem 3rem;
+    }
+  }
+</style>

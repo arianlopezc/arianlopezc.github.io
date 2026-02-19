@@ -1,0 +1,69 @@
+---
+import BlogPost from '../../layouts/BlogPost.astro';
+---
+
+<BlogPost
+  title="Rate Limiting a Tenant's Import Data with a Leaky Bucket Strategy"
+  date="2023-05-03"
+  description="Implementing a leaky bucket rate limiter for multi-tenant bulk import pipelines in a distributed inventory system."
+  readingTime="6 min read"
+>
+
+## Context
+
+Our Commerce Cloud team, which is responsible for Omnichannel Inventory, unexpectedly received an alert from our service notifying us that it was being throttled due to pending tasks that needed processing. These tasks were coming from an import task that reads a file with data submitted by our tenants.
+
+The alert was raised due to an error while processing one of the records in the import file. After correcting the error and making the necessary deployments and changes, we started thinking about ways to prevent similar scenarios from causing the service to throttle in the future.
+
+## Investigation
+
+Each tenant can submit their files for import, as long as they don't submit more than two at a time. If they try to submit more, an HTTP 429 response is returned. The client submits a request to upload the file, and then the service starts reading the records and submitting them to a separate asynchronous process that handles all the processing.
+
+These two steps happen independently, and the second process doesn't have a way to prevent additional imports from occurring. This setup worked well for our service, and we didn't experience any significant performance issues. However, when the service stopped processing records submitted with the imports, we didn't have a feature in place to prevent tenants from submitting more files and overwhelming the system.
+
+Since tenants could carry on submitting files as long as they didn't exceed the limit of two at a time, they continued to do so without realizing that the asynchronous process was accumulating records without progressing.
+
+## Solution
+
+The problem we need to solve is straightforward: we need to prevent tenants from submitting additional imports if an unexpected issue occurs in the asynchronous process that would cause it to stop processing records. Additionally, we need to be able to control the rate of data imports to manage the throughput of the import process based on the capacity we define for all tenants or for individual tenants.
+
+For regular API endpoints, a service uses rate limiting to ensure that too many requests do not affect the service. Why not use a rate limiter to prevent over-processing data for a tenant?
+
+One possible solution that seems interesting for this scenario is the Leaky Bucket rate limiting algorithm. This technique is based on an analogy of how a bucket with a constant leak will overflow if the average rate at which water is poured in exceeds the rate at which the bucket leaks, or if more water than the capacity of the bucket is poured in all at once.
+
+This algorithm/technique is successfully used as a meter in networks to control the flow of packets being sent. In ATM networks, it is used in the form of the Generic Cell Rate Algorithm to compare the bandwidth and burstiness of traffic on a Virtual Channel or Virtual Path against the specified limits on the rate at which cells may arrive and the maximum jitter or variation in inter-arrival intervals for the VC or VP.
+
+## Designing a Data Import Rate Limiter for our Service
+
+As we can see, the Leaky Bucket solution focuses on the processing capacity of the service, represented as processing cycles in a "bucket". Each tenant will be assigned a "bucket", which represents the maximum number of records that can be waiting to be processed for the tenant at any moment. Following the Leaky Bucket terminology, each token represents a data record from the files to be processed by the asynchronous process of the service.
+
+Every record that we read from an import file will reduce the tokens in the bucket by one. These reduced tokens represent the records that must be processed by the asynchronous process of the service. When the delta token processes one record, it increases the total tokens in the bucket by one, indicating that the service has one more processing cycle available that it can use.
+
+When our service receives an import file to process, we do not know how many items we will be reading, so we will read and decrease the tokens simultaneously. If during the reading process, we see that the total tokens in the bucket (processing cycles) reach 0, we will allow it to continue to decrease and reach a negative value since we are already reading the file and cannot stop. While doing this, if a tenant submits a new import, and the bucket is already in negative values, we will reject the request with a 429 status code.
+
+It is important to understand why we allow the total tokens in the bucket to go negative. First, we cannot reject a request with a 429 status code once a file is already being processed. Secondly, our flexibility of going negative means that each processing cycle being used and represented with a negative cycle becomes processing debt that our service has with itself and should be "paid" before we consider accepting more records from the tenant that consumed all the tokens.
+
+This way, our service remains flexible, doesn't unnecessarily interrupt the regular flow of processing, and can guarantee that the service won't be under unnecessary stress while maintaining a higher degree of control over the processing per tenant. Another feature that the Leaky Bucket algorithm gives us is the ability to determine when we want to allow the tenant to start using our service again. Instead of simply allowing the tenant to continue to submit more files for import, we can set an import restart limit, which is 10% of the total processing cycles. This means that only when the bucket's processing cycles have been replenished by a total of 10% of the total cycles we assign to the tenant, will they be able to submit imports again. By doing this, we guarantee that the tenant won't empty the bucket too fast with imports that could result in HTTP 429 errors, which could occur too frequently.
+
+It's important to note that we must allow a tenant's bucket size to be declared individually from all others or from the default one. This way, if a tenant requires more (or fewer) tokens than initially expected, we can provide them without affecting others. For that, we would declare the buckets in a YAML file with a format similar to this one:
+
+<pre><code>definitions:
+  - id: default
+    size: 10000
+  - id: smallBucket
+    size: 200
+    tenantsToBeAppliedTo:
+      - tenant1
+      - tenant2</code></pre>
+
+In order to be able to keep all instances of the service that are reading data for the tenants, we will use Redis to keep the buckets' total tokens synched among them. By doing this, we make sure that a tenant cannot submit more than one import, which can be picked by more than one instance of the service, and have more records processed than the declared limit.
+
+## Final Thoughts
+
+Developing this new feature was an exciting project. It's always interesting to repurpose an algorithm, technique, or feature for a new use.
+
+Implementing this form of rate limiter for data import purposes allowed my team to maintain control over our asynchronous processes and avoid throttling them in case of failures that were not properly handled.
+
+An important consideration was ensuring that our tenants' regular operations were not impacted by the introduction of this potential breaking change. We updated all of our documentation to reflect the new feature. Since our tenants were already aware of the 429 status response if they tried to submit more than two import processes, no changes were needed in their integrations to handle the response.
+
+</BlogPost>

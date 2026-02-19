@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="About — Arian Lopez" description="Software engineer writing about distributed systems, Redis, and AI-native developer tools.">
+  <section class="about">
+    <h1>About</h1>
+
+    <p>
+      I'm a software engineer from Havana, Cuba, based in South Florida. I've spent most of my career
+      working on backend infrastructure — the kind of systems where getting the caching strategy wrong
+      means your Redis cluster hits 100% memory at 3am, and where "just add another instance" is never
+      actually the answer.
+    </p>
+
+    <p>
+      Right now I'm at UKG, working on platform engineering — API infrastructure, tenant lifecycle
+      systems, and internal tooling. Before that I was at Salesforce for about four and a half years,
+      building the inventory platform behind Commerce Cloud. And before that, PwC, where I got my
+      first real exposure to AI through building modules for an IBM Watson-powered assistant.
+    </p>
+
+    <h2>What I think about</h2>
+
+    <p>
+      I'm fascinated by the space between platform engineering and AI. Not the "sprinkle some LLM
+      on it" kind — the kind where you give AI tools actual structural knowledge about your codebase
+      and they go from generating plausible-looking code to generating code that actually fits.
+    </p>
+
+    <p>
+      That's what led me to build <a href="/projects">Trabuco</a>. It started as a project generator
+      because I was tired of spending the first sprint of every new service on Maven boilerplate. Then
+      I noticed AI coding assistants worked dramatically better on the projects it generated — the clean
+      module boundaries gave them context they couldn't get from a messy monolith. So I kept going:
+      AI migration pipelines, MCP integration, context files for five different coding assistants.
+      It became less about scaffolding and more about what an AI-native project structure actually looks like.
+    </p>
+
+    <h2>Writing</h2>
+
+    <p>
+      I write about things I've worked through — Redis performance debugging, rate limiting strategies
+      for multi-tenant systems, caching architectures. Production problems, not theoretical ones.
+      If I'm writing about it, it's because my team hit it and we had to figure it out.
+    </p>
+
+    <h2>Background</h2>
+
+    <p>
+      I studied Computer Science at the Polytechnic Institute of Havana (CUJAE) and later got my B.S.
+      at Florida International University. I'm based in Pembroke Pines, FL.
+    </p>
+
+    <div class="links">
+      <a href="https://github.com/arianlopezc" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://linkedin.com/in/arian-l-1806687a" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="mailto:arian.lopezc@gmail.com">arian.lopezc@gmail.com</a>
+      <a href="/ArianLopezResume.pdf" target="_blank">Resume</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .about {
+    padding: 1rem 0 2rem;
+  }
+
+  .about h1 {
+    margin-bottom: 1.5rem;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+  }
+</style>

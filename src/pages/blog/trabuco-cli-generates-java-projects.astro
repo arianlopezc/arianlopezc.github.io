@@ -1,0 +1,135 @@
+---
+import BlogPost from '../../layouts/BlogPost.astro';
+---
+
+<BlogPost
+  title="I Built a CLI That Generates Production-Ready Java Projects in Seconds. Here's Why."
+  date="2026-02-14"
+  description="How I built Trabuco, an open-source Go CLI with a 10-stage AI migration pipeline using Anthropic's SDK and Model Context Protocol."
+  readingTime="6 min read"
+>
+
+Every Java developer has lived this moment.
+
+New project. Fresh repo. And then — the ritual begins. Maven parent POM, child modules, dependency versions, database configuration, connection pooling, migration scripts, test infrastructure with Testcontainers, Docker Compose for local dev, circuit breaker setup, health endpoints, correlation ID filters, OpenAPI config. Three hours later, you haven't written a single line of business logic.
+
+I kept doing this. Project after project. Copying from "that one repo that mostly works," tweaking configs, debugging dependency conflicts that shouldn't exist. At some point, I stopped and asked: *why am I still doing this by hand?*
+
+That question became Trabuco.
+
+## "Just Ask an AI to Generate It"
+
+I know what you're thinking. It's 2026 — why not just prompt Claude or ChatGPT to scaffold a project for you?
+
+I tried that. The problem isn't that AI can't generate a project. It can. The problem is that it generates a *different* project every time. Different package structure. Different dependency choices. Different patterns for the same problem. Ask it on Monday and you get constructor injection; ask it on Friday and you get field injection with `@Autowired`. The structure depends entirely on how the AI interprets your prompt that day.
+
+This kills the one thing that makes teams fast: familiarity. When every project looks different, you lose the ability to jump into a new codebase and immediately know where things are. You can't build shared tooling around a structure that changes with every generation. You can't onboard a new developer by saying "it's the same layout as our other services" — because it isn't.
+
+Trabuco generates the same battle-tested architecture every time. Same module boundaries, same dependency direction, same patterns. Your fifth Trabuco project feels exactly like your first one. That consistency compounds — across projects, across teams, across time.
+
+## One Command. Done.
+
+Trabuco is a CLI that generates complete, production-grade Java projects. Not starter templates. Not archetypes you spend an hour customizing. Fully wired, multi-module Maven projects that compile, pass tests, and run out of the box.
+
+<pre><code>trabuco init --name=orders-api \
+  --group-id=com.company.orders \
+  --modules=Model,SQLDatastore,Shared,API \
+  --database=postgresql</code></pre>
+
+That's it. You get a clean multi-module project: Model for your data structures, SQLDatastore with Spring Data JDBC and Flyway migrations, Shared for business services with Resilience4j circuit breakers, and API with REST controllers, OpenAPI docs, and Prometheus metrics. Docker Compose included. IntelliJ run configs included. Testcontainers integration tests included.
+
+<pre><code>cd orders-api && mvn clean install
+cd API && mvn spring-boot:run
+# API running at localhost:8080</code></pre>
+
+Need background jobs? Add Worker. Event-driven messaging? Add EventConsumer and pick your broker — Kafka, RabbitMQ, SQS, or Pub/Sub. MongoDB instead of PostgreSQL? Swap the datastore module. Java 25 instead of 21? One flag. Everything reconfigures automatically.
+
+<pre><code># Start minimal, grow as you need
+trabuco add Worker
+trabuco add EventConsumer --message-broker=kafka</code></pre>
+
+## Architecture That Scales (and AI Understands)
+
+The generated structure isn't just organized — it's opinionated in ways that pay off.
+
+Each module has a clear responsibility and explicit dependencies. Model depends on nothing. Datastores depend on Model. Shared depends on Model and Datastores. API, Worker, and EventConsumer depend on Model and Shared — but never on each other. This isn't optional. The module boundaries enforce it.
+
+This matters for teams because new developers can understand the codebase in minutes, not days. It matters for testing because each layer can be tested in isolation. And it matters increasingly for something I didn't originally plan for: AI.
+
+When I started using AI coding assistants — Claude Code, Cursor, GitHub Copilot — I noticed they performed dramatically better on Trabuco projects. The clean separation, predictable patterns, and explicit dependencies gave them exactly the context they needed. No ambiguity about where a service belongs. No confusion about dependency direction. No monolithic source tree where everything imports everything.
+
+So I leaned into it. Trabuco now generates context files for five major AI coding assistants: **Claude Code, Cursor, GitHub Copilot, Windsurf, and Cline**. These files contain project-specific conventions, architecture rules, and coding patterns — giving AI tools the knowledge to write code that fits naturally into your project from the first prompt.
+
+There's also an optional **MCP server module** that lets AI tools query your project directly — build status, test results, architecture overview — through the Model Context Protocol.
+
+<pre><code>trabuco init --name=myapp \
+  --modules=Model,SQLDatastore,Shared,API,MCP \
+  --ai-agents=claude,cursor \
+  --database=postgresql</code></pre>
+
+## Migrating What Already Exists
+
+New projects are the easy case. The harder problem is the one most teams actually face: an existing Spring Boot monolith that's grown organically for years, and nobody wants to restructure it because the risk is too high and the effort is too large.
+
+`trabuco migrate` tackles this head-on. It uses AI to analyze your existing codebase — entities, services, controllers, repositories — and restructures it into Trabuco's multi-module architecture. JPA entities become Spring Data JDBC. Quartz jobs become JobRunr. Lombok gets replaced. `javax.*` becomes `jakarta.*`. The AI understands your code, not just its syntax.
+
+<pre><code>trabuco migrate /path/to/legacy-app</code></pre>
+
+Migration runs in 10 stages with checkpoints at each step. You can review decisions before they're applied, resume if interrupted, and roll back to any stage. Before it starts, you see the estimated cost — typically under a dollar for a medium-sized project. Full transparency, no surprises.
+
+<pre><code># See what would happen without changing anything
+trabuco migrate --dry-run /path/to/legacy-app
+# Resume where you left off
+trabuco migrate --resume /path/to/legacy-app
+# Roll back if needed
+trabuco migrate --rollback /path/to/legacy-app</code></pre>
+
+Is it perfect? No — and I'm upfront about that. Complex JPA inheritance hierarchies and custom Hibernate types still need manual attention. But the AI flags those cases explicitly and tells you exactly what needs review. For the 80% of code that follows standard Spring Boot patterns, the migration is automatic. That alone saves weeks of manual refactoring.
+
+## What's Under the Hood
+
+Trabuco generates projects on a modern, production-proven stack:
+
+- **Spring Boot 3.4** with Spring Data JDBC (not JPA — no lazy loading surprises)
+- **Flyway** for version-controlled database migrations
+- **Testcontainers 2.x** for integration tests against real databases
+- **Resilience4j** for circuit breakers and fault tolerance
+- **JobRunr** for background job processing
+- **Kafka / RabbitMQ / SQS / Pub/Sub** for event-driven messaging
+- **Immutables** for type-safe, builder-pattern DTOs
+- **Micrometer + Prometheus** for metrics
+- **OpenAPI 3.0** with Swagger UI
+
+The CLI itself is written in Go — single binary, no runtime dependencies, installs in seconds.
+
+## Your Project Stays Healthy
+
+Trabuco doesn't disappear after generation. The `trabuco doctor` command validates your project's structure and consistency at any time — checking module POMs, Java version alignment, Docker Compose sync, and metadata integrity. Think of it as a health check for your architecture.
+
+<pre><code>trabuco doctor
+# Trabuco Project Health Check
+# ✓ Project structure valid
+# ✓ Module POMs exist (4 modules)
+# ✓ Java version consistent (21)
+# ✓ Docker Compose in sync
+# Status: HEALTHY</code></pre>
+
+Found issues? `trabuco doctor --fix` auto-repairs what it can. Need it in CI? `trabuco doctor --json` outputs machine-readable results.
+
+## Why I Built This
+
+I'm an engineer who spent too many years watching teams burn their first sprint on project setup. Watching senior developers copy-paste infrastructure from old repos. Watching the "quick prototype" that was supposed to take a day, take a week because the boilerplate wasn't there yet.
+
+Trabuco isn't a framework. It doesn't lock you in. It generates standard Maven projects with standard Spring Boot — you can eject at any time by simply never running `trabuco` again. What it gives you is a starting point that would take an experienced team a week to build by hand, delivered in under a minute.
+
+<pre><code>curl -sSL https://raw.githubusercontent.com/arianlopezc/Trabuco/main/scripts/install.sh | bash</code></pre>
+
+It's open source. It's free. And it's ready to use today.
+
+**GitHub:** [github.com/arianlopezc/Trabuco](https://github.com/arianlopezc/Trabuco)
+
+---
+
+*Trabuco is open source under the MIT License. I'd love your feedback — open an issue, submit a PR, or just give it a star if it saves you time.*
+
+</BlogPost>
