@@ -1,0 +1,148 @@
+---
+import BlogPost from '../../layouts/BlogPost.astro';
+
+const oldToolJson = `{
+  "modules": ["Model", "Shared", "API", "EventConsumer"],
+  "message_broker": "kafka",
+  "reasoning": {"EventConsumer": "Event processing with kafka"},
+  "init_command": "trabuco init --modules Model,Shared,API,EventConsumer --message-broker kafka"
+}`;
+
+const newToolJson = `{
+  "modules": [
+    {"name": "API", "use_case": "Adds a Spring Boot REST API with OpenAPI docs...",
+     "does_not_include": "Does not include authentication, rate limiting, or GraphQL"},
+    {"name": "EventConsumer", "use_case": "Adds event-driven message processing from Kafka, RabbitMQ, SQS, or Pub/Sub...",
+     "does_not_include": "Does not include event sourcing framework or schema registry"},
+    ...
+  ],
+  "warnings": [
+    "Ambiguous term 'event': In Trabuco, EventConsumer is for message broker consumers (Kafka, RabbitMQ, SQS). If the user means HTTP event payloads (webhooks), they need API, not EventConsumer."
+  ],
+  "constraints": [
+    "SQLDatastore and NoSQLDatastore are mutually exclusive",
+    "Worker uses the SQL database for job storage"
+  ]
+}`;
+
+const inlineJsonExample = '{"modules": ["EventConsumer"], "message_broker": "kafka"}';
+---
+
+<BlogPost
+  title="I Built an MCP Tool That Was Confidently Wrong. Here's What I Learned About Designing for AI Agents."
+  date="2026-02-22"
+  description="I shipped a tool that made AI agents worse at their job. It took three wrong recommendations before I understood why."
+  readingTime="6 min read"
+>
+
+<p>I shipped a tool that made AI agents worse at their job. It took three wrong recommendations before I understood why.</p>
+
+<p>The tool was called <code>suggest_architecture</code>. You give it a natural language description — "I need an API that receives math operation events and keeps a running total" — and it recommends which modules to include in your project. Simple enough. The problem was that it used keyword matching to make those recommendations. And keyword matching, it turns out, is a terrible way to help a language model.</p>
+
+<h3>Three Wrong Answers</h3>
+
+<p>Here's what the tool did with real inputs:</p>
+
+<p>"API that receives math operation events and keeps a running total." The word "events" triggered the EventConsumer module with Kafka. The correct answer was a REST API with a database. The user meant HTTP event payloads — webhooks, POST requests — not Kafka messages. But the keyword matcher saw "event" and reached for the message broker.</p>
+
+<p>"Service that processes orders and sends confirmation emails." It recommended Model and Shared. No database. No API. No background worker for the email sending. The keywords "service" and "processes" didn't match any of the database or API triggers. A human reading that sentence would immediately know you need persistence and an endpoint. The tool missed both.</p>
+
+<p>"Microservice that listens for payment webhooks and updates balances." The word "listens" triggered EventConsumer with Kafka again. But a webhook listener is an HTTP endpoint. It's the API module, not the event consumer. The tool can't tell the difference because "listens" means one thing in Trabuco's domain and another thing in everyday language.</p>
+
+<p>Same pattern every time. The tool was confidently wrong, and the AI agent — receiving a structured recommendation from an authoritative source — followed it without question.</p>
+
+<h3>The Irony</h3>
+
+<p>Here's what made this especially frustrating. The calling agent is an LLM. It's <em>the</em> natural language understanding system. If you gave it the module descriptions — "EventConsumer adds event-driven message processing from Kafka, RabbitMQ, SQS, or Pub/Sub" and "API adds a Spring Boot REST API with OpenAPI documentation" — it would correctly map "receives math operation events via HTTP" to the API module. Every time.</p>
+
+<p>But my tool intercepted that reasoning. It took the natural language input, ran it through a keyword matcher, and handed the agent a pre-made decision. The agent trusted the tool's output over its own understanding. Why wouldn't it? The tool is the domain expert. When a tool returns <code set:text={inlineJsonExample}></code>, the agent has no reason to second-guess it.</p>
+
+<p>I had built a tool that replaced good reasoning with bad pattern matching. The agent was smarter than my tool, and my tool was overriding it.</p>
+
+<h3>The Pattern That Breaks</h3>
+
+<p>This isn't unique to my project. It's a pattern I see in MCP tool design everywhere: tools that try to do the agent's thinking for it.</p>
+
+<p>The instinct makes sense. You're building a tool for an AI assistant. You want to be helpful. So you process the input, apply domain logic, and return a clean recommendation. The agent gets a simple answer. Ship it.</p>
+
+<p>But here's the failure mode. Your domain logic is a set of heuristics — keyword matches, rule engines, decision trees. The agent calling your tool is a language model with broad reasoning capabilities. When your heuristics are right, the agent gets a good answer fast. When your heuristics are wrong, the agent gets a confidently wrong answer and has no way to recover. It doesn't see the reasoning. It just sees the output.</p>
+
+<p>The more decisions your tool makes, the more failure modes you create. And the agent can't catch your mistakes because you've hidden the information it would need to do so.</p>
+
+<h3>Inform, Don't Decide</h3>
+
+<p>The fix was to stop making decisions and start providing information.</p>
+
+<p>The old <code>suggest_architecture</code> returned this:</p>
+
+<pre><code set:text={oldToolJson}></code></pre>
+
+<p>A concrete recommendation. A ready-to-run command. And for "API that receives math operation events," completely wrong.</p>
+
+<p>The new version returns this:</p>
+
+<pre><code set:text={newToolJson}></code></pre>
+
+<p>No module selection. No database choice. No init command. Instead: the full catalog of what's available, disambiguation warnings for terms that mean something specific in this domain, and hard constraints the agent needs to respect.</p>
+
+<p>The agent reads the catalog. It sees that "events" in the user's description means HTTP payloads, not Kafka messages — because the warning told it to check, and the module descriptions made the distinction clear. It picks Model, SQLDatastore, Shared, and API. Correct.</p>
+
+<h3>Disambiguation Warnings: The Useful Part of Keyword Matching</h3>
+
+<p>I didn't throw away keyword detection entirely. I repurposed it.</p>
+
+<p>The old tool used keywords to <em>select modules</em>. The new tool uses keywords to <em>flag ambiguity</em>. When the user says "event" without mentioning Kafka, RabbitMQ, or any message broker, the tool doesn't assume anything. It says: "This word is ambiguous in our domain. Here's what it means in Trabuco. You decide."</p>
+
+<p>Five terms get this treatment:</p>
+
+<p><strong>"event"</strong> without broker keywords — warns that EventConsumer is for message broker consumers, not HTTP payloads.</p>
+
+<p><strong>"listener"</strong> without broker keywords — warns that "listener" in Trabuco means message queue consumer, not HTTP callback handler.</p>
+
+<p><strong>"queue"</strong> without broker keywords — clarifies Worker (internal job queue) vs. EventConsumer (external message queue).</p>
+
+<p><strong>"async"</strong> — clarifies Worker (durable background jobs) vs. EventConsumer (stream processing) vs. application-level async (not generated).</p>
+
+<p><strong>"cache"</strong> — clarifies NoSQLDatastore/Redis (persistent store) vs. in-memory caching (not generated, add manually).</p>
+
+<p>These are warnings, not decisions. The agent gets flagged: "hey, this word means something specific here, and it might not be what the user meant." Then the agent — which actually understands the user's intent — makes the call.</p>
+
+<h3>Boundaries Are as Important as Capabilities</h3>
+
+<p>The other thing the new tool communicates is what the project <em>doesn't</em> do. Every module in the catalog has a <code>does_not_include</code> field:</p>
+
+<ul>
+  <li>API: "Does not include authentication, authorization, rate limiting, API versioning, pagination helpers, or GraphQL"</li>
+  <li>SQLDatastore: "Does not include JPA/Hibernate, database schema design, seed data, or connection pooling tuning"</li>
+  <li>Worker: "Does not include job orchestration/workflow engines, saga pattern, or job monitoring beyond the JobRunr dashboard"</li>
+</ul>
+
+<p>This matters because AI agents hallucinate capabilities. Without explicit boundaries, an agent might generate Spring Security configuration in a project that doesn't have Spring Security. Or create a pagination helper assuming the framework provides one. The <code>does_not_include</code> field prevents this. The agent knows where the generated code stops and manual work begins.</p>
+
+<p>The response also includes an unsupported requirements detector. If the user mentions authentication, GraphQL, Kubernetes, or WebSockets, the tool flags them: "Trabuco doesn't generate this. Here's what you'll need to add manually." The agent can tell the user upfront instead of attempting to generate something that won't work.</p>
+
+<h3>The Broader Principle</h3>
+
+<p>If I had to distill what I learned into a rule, it's this: <strong>MCP tools should be maximally informative and minimally prescriptive.</strong></p>
+
+<p>Return structured data. Return constraints. Return warnings about domain-specific ambiguity. Don't return decisions.</p>
+
+<p>The agent calling your tool is a language model. It's better at natural language understanding than any keyword matcher or decision tree you'll write. Your tool's advantage is domain knowledge — the specific meanings, constraints, and boundaries of your system. Combine the agent's reasoning with your domain knowledge and you get good decisions. Replace the agent's reasoning with your heuristics and you get brittle ones.</p>
+
+<p>This applies beyond architecture suggestion. Any MCP tool that takes natural language input and returns a concrete action is at risk. The more your tool "helps" by pre-processing the agent's intent, the more opportunities you create for confident misinterpretation.</p>
+
+<h3>What Changed</h3>
+
+<p>The old tool worked perfectly on unambiguous inputs. "I need a REST API with PostgreSQL and background jobs" — correct every time. The new tool also handles those cases — the agent reads the catalog, picks the obvious modules, done.</p>
+
+<p>The difference shows on the ambiguous ones. "API that receives math operation events" is genuinely ambiguous. A human would ask a follow-up question. The old tool didn't ask — it assumed Kafka. The new tool surfaces the ambiguity and lets the agent reason about it. Sometimes the agent picks API. Sometimes it asks the user. Either way, it doesn't silently choose Kafka for an HTTP endpoint.</p>
+
+<p>Better tools don't make decisions for AI. They make sure the AI has what it needs to decide well.</p>
+
+<hr />
+
+<p><strong>GitHub:</strong> <a href="https://github.com/arianlopezc/Trabuco">github.com/arianlopezc/Trabuco</a></p>
+
+<p><em>If you're building MCP tools and have run into similar patterns — tools that accidentally undermine the agent's reasoning — I'd love to hear about it. This is new territory for all of us.</em></p>
+
+</BlogPost>

@@ -1,0 +1,127 @@
+---
+import BlogPost from '../../layouts/BlogPost.astro';
+---
+
+<BlogPost
+  title="Your AI Agent Writes Great Code. Your Project Just Can't Tell It the Rules."
+  date="2026-02-22"
+  description="You need to stop reviewing your agent's generated code for style violations. Not because code quality doesn't matter — because the way you're enforcing it doesn't work."
+  readingTime="6 min read"
+>
+
+<p>You need to stop reviewing your agent's generated code for style violations. Not because code quality doesn't matter — because the way you're enforcing it doesn't work.</p>
+
+<p>Here's what's actually happening. AI-assisted developers merge 98% more pull requests, but PR review time increases by 91%. Two-thirds of developers say they spend more time fixing "almost-right" AI code than they'd spend writing it themselves. And here's the part nobody wants to talk about: 48% of developers aren't consistently checking AI-generated code before committing it anyway.</p>
+
+<p>The industry's answer — "always review AI-generated code carefully" — is already failing. Developers aren't doing it. The ones who are spend more time reviewing than they saved generating.</p>
+
+<p>I decided to stop pretending manual review would scale and built something else instead.</p>
+
+<h3>You're Not Reviewing Code. You're Being a Human Linter.</h3>
+
+<p>Every developer using AI coding assistants has lived this moment.</p>
+
+<p>You ask Claude or Copilot to add a new endpoint. It generates fifty lines of clean, working Java. You skim it, and — field injection with <code>@Autowired</code>. Your project uses constructor injection exclusively. Or it puts business logic in the controller. Or it creates a mutable POJO when your entire codebase uses Immutables. Or it imports from a module that shouldn't depend on the one you're editing.</p>
+
+<p>The code compiles. The tests pass. But it doesn't <em>fit</em>.</p>
+
+<p>This is the dirty secret of AI-assisted development in 2026: you're not reviewing for correctness. The AI handles that fine. You're reviewing for <em>consistency</em> — conventions the AI doesn't know about because nobody told it. You're a human linter. And you're an unreliable one at that, because catching style violations across fifty generated files requires a kind of attention that humans aren't built for.</p>
+
+<p>The fix isn't "review harder." The fix is making review unnecessary for the things machines can check.</p>
+
+<h3>The Problem Isn't the AI</h3>
+
+<p>Let me be clear: AI coding assistants are remarkably good at writing code. Give Claude Code a well-scoped task and it'll produce something that works on the first try more often than not. The problem is that "works" and "fits your project" are two different things.</p>
+
+<p>Your project has opinions. Constructor injection, not field injection. Immutables for DTOs, not Lombok. Spring Data JDBC, not JPA. Streams over loops. Methods under thirty lines. Circuit breakers on external calls. Repository types never exposed outside the service layer. These aren't arbitrary preferences — they're accumulated decisions that make the codebase navigable.</p>
+
+<p>The AI doesn't know any of that. It knows Java. It knows Spring Boot. It doesn't know <em>your</em> Spring Boot.</p>
+
+<p>The convention gap isn't the AI's fault. It's an infrastructure problem. If your project can't communicate its rules to the AI, <em>you</em> become the rule enforcer. Every pull request. Every file. Forever.</p>
+
+<p>I wanted to make the project teach the AI, so I could stop being the teacher.</p>
+
+<h3>Making Conventions Machine-Readable</h3>
+
+<p>AI coding assistants don't ignore your conventions out of malice. They ignore them because they can't <em>see</em> them. A convention that lives in a senior developer's head is invisible to the tool.</p>
+
+<p>I built Trabuco — a CLI that generates production-ready Java multi-module projects. But the part that matters for this story isn't the Java code. It's the layer that sits alongside it: specification files that AI assistants consume before they write anything.</p>
+
+<p>These aren't README files for humans with vague guidelines like "please follow clean code practices." They're structured documents designed for how AI agents actually process context.</p>
+
+<p>The core file is <code>JAVA_CODE_QUALITY.md</code> — a 500-line specification covering modern Java idioms, method complexity limits, naming conventions, error handling patterns, architecture compliance rules, and Spring best practices. It starts with a directive that every AI assistant is configured to follow: <em>read this before generating any code in this project.</em></p>
+
+<p>But a single quality spec isn't enough. Agents need task-specific guidance too. When adding a new entity, there are twelve steps — from creating the Immutables interface, to writing the SQL record with conversion methods, to the Flyway migration, repository, service, DTOs, and tests. Miss any one and you've got a review comment. So I built task playbooks: <code>add-entity.md</code>, <code>add-endpoint.md</code>, <code>add-job.md</code>, <code>add-event.md</code> — each one a step-by-step guide for a specific type of change.</p>
+
+<p>The agent reads the quality spec first. Then, when the developer says "add a new entity for invoices," it reads the entity playbook. The generated code follows both. No review comment needed.</p>
+
+<h3>Five Agents, One Set of Rules</h3>
+
+<p>Here's a problem I didn't anticipate: different AI assistants read project context differently.</p>
+
+<p>Claude Code looks for <code>CLAUDE.md</code> and <code>.claude/settings.json</code>. Cursor reads <code>.cursor/rules/</code>. Copilot reads <code>.github/instructions/</code>. Windsurf and Cline have their own locations. If you only write rules for one tool, the others fly blind. And in any real team, people use different tools.</p>
+
+<p>So Trabuco generates agent-specific configuration files for all five. Same architectural rules, same code patterns, same quality standards — adapted to each tool's format and context loading mechanism. One command gives every AI assistant on your team the same knowledge.</p>
+
+<pre><code>trabuco init --name=orders-api \
+  --modules=Model,SQLDatastore,Shared,API \
+  --database=postgresql \
+  --ai-agents=claude,cursor,copilot</code></pre>
+
+<p>Any agent that opens this project knows the rules before it writes a single line. The developer using Claude Code and the developer using Cursor get the same conventions enforced. No drift between tools. No "it works differently in my editor."</p>
+
+<h3>Specifications Are Suggestions. The Build Is Not.</h3>
+
+<p>Specification files are powerful, but they're guidance. An agent <em>can</em> ignore them. I needed a second layer — one where violations aren't just flagged, they're impossible to ship.</p>
+
+<p>Trabuco generates ArchUnit tests that run as part of the normal test suite. These aren't guidelines. They're compiled assertions that fail the build.</p>
+
+<p>No field injection. If any class in the project uses <code>@Autowired</code> on a field, the build fails. Controllers can't import repository classes — they must go through the service layer. No cyclic dependencies between packages. These rules run on every <code>mvn test</code>, including in CI. There's no way to merge code that violates them.</p>
+
+<p>Maven Enforcer adds another layer. Using <code>javax.*</code> instead of <code>jakarta.*</code>? Build fails. JUnit 4 instead of JUnit 5? Build fails. Conflicting dependency versions? Build fails. The enforcer doesn't care whether a human or an AI wrote the code.</p>
+
+<p>Spotless handles formatting. Google Java Format, applied automatically. The agent generates code, runs <code>mvn spotless:apply</code>, and the style is consistent. No review comment about indentation or bracket placement. Ever.</p>
+
+<p>This is the key insight: <strong>the things you spend the most time reviewing — conventions, architecture, formatting — are exactly the things that can be enforced by machines.</strong> You've been doing the machine's job. Stop.</p>
+
+<h3>Agents That Check Their Own Work</h3>
+
+<p>The final piece is giving the agent the ability to verify its own output before a human ever sees it.</p>
+
+<p>Trabuco can generate a project-level MCP server that exposes build, test, quality, and review tools through the Model Context Protocol. The agent writes code, then calls <code>build</code> to compile it. Calls <code>run-tests</code> to verify tests pass. Calls <code>check-quality</code> to validate formatting and dependency rules. If anything fails, the agent fixes it and tries again. The human never sees the intermediate mistakes.</p>
+
+<p>There's even a <code>get-review-context</code> tool that returns the project's quality rules for a specific file, and a <code>record-review-finding</code> tool that logs issues to a persistent review journal. Over time, the agent builds a record of which patterns it tends to get wrong and checks them proactively.</p>
+
+<p>This isn't theoretical. I've watched Claude Code generate a new endpoint, run the tests, catch an ArchUnit violation — it accessed a repository directly from the controller — fix it by routing through the service layer, re-run the tests, and present working code. All without human intervention. Forty seconds. The code that arrived in my editor followed every convention in the project.</p>
+
+<p>The review that didn't happen wasn't a risk. It was unnecessary.</p>
+
+<h3>What's Left to Review</h3>
+
+<p>Here's the concrete result.</p>
+
+<p>A developer says "add an Invoice entity with number, amount, and status." The agent reads the quality spec, follows the entity playbook, creates files across four modules — Model, SQLDatastore, Shared, API — runs the tests, auto-formats the code. ArchUnit validates the dependency directions. Spotless enforces the style. Everything passes.</p>
+
+<p>The developer gets a pull request. No field injection. No mutable DTOs. No repository imports in controllers. No <code>javax.*</code>. Correct module boundaries. Consistent formatting.</p>
+
+<p>What's left to check? Whether the Invoice entity has the right fields. Whether the business logic is correct. Whether the API contract makes sense. <em>That's the review that matters.</em> That's the review that deserves your full attention — not the leftover attention you have after catching twenty convention violations.</p>
+
+<h3>Why This Matters Now</h3>
+
+<p>The industry is at an inflection point. AI is writing more code every month, and the verification bottleneck is getting worse, not better. The current answer — "review everything carefully" — doesn't scale and isn't happening in practice.</p>
+
+<p>The alternative isn't blind trust. It's infrastructure. Four layers, each catching what the previous one missed:</p>
+
+<p><strong>Specifications</strong> teach the agent your conventions before it writes code. <strong>Compile-time enforcement</strong> catches violations the specifications didn't prevent. <strong>Self-verification tools</strong> let the agent fix its own mistakes before you see them. <strong>CI</strong> runs the same checks on every commit, regardless of who — or what — wrote the code.</p>
+
+<p>By the time code reaches your screen, it's been through all four. What's left is the hard part — the part that actually benefits from a human reading it. Business logic. Domain correctness. API design decisions. The work that requires judgment, not pattern matching.</p>
+
+<p>Stop being a human linter. You have better things to review.</p>
+
+<hr />
+
+<p><strong>GitHub:</strong> <a href="https://github.com/arianlopezc/Trabuco">github.com/arianlopezc/Trabuco</a></p>
+
+<p><em>Trabuco is open source under the MIT License. If you're spending more time reviewing AI code for convention violations than for actual bugs, I'd love to hear how you approach the problem. Open an issue or reach out.</em></p>
+
+</BlogPost>
