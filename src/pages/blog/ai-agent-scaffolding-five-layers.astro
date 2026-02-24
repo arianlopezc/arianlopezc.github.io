@@ -1,0 +1,295 @@
+---
+import BlogPost from '../../layouts/BlogPost.astro';
+---
+
+<BlogPost
+  title="Your AI Agent Doesn't Need More Guardrails. It Needs a Better Project."
+  date="2026-02-24"
+  description="Five layers of project scaffolding that reduce AI code review to near-zero — architecture maps, conventions specs, task playbooks, automated enforcement, and testing infrastructure."
+  readingTime="15 min read"
+>
+
+<p>You're about to spend the next hour reviewing code your AI agent wrote. You'll check formatting. You'll verify it followed the right patterns. You'll make sure it put the file in the right directory. You'll confirm it used constructor injection instead of field injection. You'll fix the test because it used an in-memory database instead of a container.</p>
+
+<p>None of that needed to happen.</p>
+
+<p>Not because the agent wrote perfect code — it didn't. Because every one of those failures was predictable, preventable, and automatable before you ever saw the pull request.</p>
+
+<p>The industry conversation around AI coding agents is stuck on the wrong question. Everyone asks "how do we review AI-generated code?" The better question is: how do we make most of that review unnecessary?</p>
+
+<p>The answer isn't a smarter model. It isn't a longer system prompt. It isn't a review checklist pinned to your monitor.</p>
+
+<p>It's the project itself.</p>
+
+<h3>The Problem Is Not Intelligence. It's Context.</h3>
+
+<p>Large language models know your programming language. They know your framework. They've seen millions of repositories. They can write a Spring Boot controller, a FastAPI endpoint, a Rails model, a Next.js page.</p>
+
+<p>What they don't know is <em>your</em> project.</p>
+
+<p>They don't know you use constructor injection exclusively. They don't know your DTOs are immutable value objects, not POJOs with getters and setters. They don't know your migration files follow a specific naming convention. They don't know controllers never talk to repositories directly — they go through a service layer. They don't know your tests run against real database containers, not H2. They don't know which module owns which responsibility.</p>
+
+<p>So they guess. And they guess <em>reasonably</em>. The code compiles. The tests pass. But it doesn't fit.</p>
+
+<p>That gap — between code that works and code that belongs — is where every hour of your review time goes. You're not catching bugs. You're enforcing conventions that exist nowhere but your head and maybe a wiki page the agent never reads.</p>
+
+<h3>Making the Project Teach the Agent</h3>
+
+<p>Here's the shift: instead of teaching the agent after it writes code (review), teach the project to teach the agent before it writes code (scaffolding).</p>
+
+<p>Every modern AI coding agent — Claude Code, Cursor, Copilot, Windsurf, Cline — reads context files from the repository. These files are loaded automatically when a session starts. The agent reads them before writing a single line. They are the most underutilized surface area in AI-assisted development.</p>
+
+<p>Most teams either don't create these files or fill them with vague instructions like "follow best practices" and "write clean code." That's like handing a new hire the company values poster and expecting production-ready code by Friday.</p>
+
+<p>What these files should contain is everything a senior engineer would say in the first 30 minutes of pairing with someone new to the codebase. Not philosophy. Mechanics.</p>
+
+<h3>The Five Layers of Agent-Ready Scaffolding</h3>
+
+<p>There are five layers that, together, make an AI agent capable of writing code you'd approve without meaningful changes. Each layer solves a different failure mode. Skip one and the corresponding category of review waste comes back.</p>
+
+<p><strong>Layer 1: The Architecture Map.</strong> The agent needs to know what exists, where things go, and what depends on what. This isn't a README. It's a machine-readable project description: modules and their purposes, dependency directions, file location conventions, and the technology stack with specific versions. If your project has a layered architecture — controllers call services, services call repositories, repositories own persistence — that dependency graph must be explicit. Not implied. Not "obvious." Written down, in a file the agent reads on startup.</p>
+
+<p>Here's what a module boundary table looks like in practice:</p>
+
+<pre><code>| Module     | Purpose                     | Can Depend On        |
+|------------|-----------------------------|----------------------|
+| model      | Domain entities &amp; DTOs       | nothing              |
+| datastore  | Persistence &amp; repositories   | model                |
+| shared     | Business logic &amp; services    | model, datastore     |
+| api        | REST controllers &amp; filters   | shared               |
+| worker     | Background job handlers      | shared               |</code></pre>
+
+<p>That table is worth more than a thousand words of prose. An agent reading it knows immediately: if it's writing a controller, it imports from <code>shared</code>, never from <code>datastore</code>. If it's writing a service, it imports from <code>datastore</code>, never from <code>api</code>. Violations become unambiguous.</p>
+
+<p><strong>Layer 2: The Code Conventions Spec.</strong> This is the longest document and the most important one. It covers every pattern the project follows, with explicit correct and incorrect examples. Not "use immutable objects" — show the exact syntax. Not "prefer streams over loops" — show the transformation. Not "handle errors properly" — show where exceptions are thrown, where they're caught, and what annotations map them to HTTP status codes.</p>
+
+<p>A good conventions spec includes:</p>
+
+<ul>
+<li>Naming patterns with examples (classes: <code>PascalCase</code> noun, methods: <code>camelCase</code> verb, test methods: <code>methodName_scenario_expectedResult</code>)</li>
+<li>Object creation patterns (builders, factories, records — with code snippets showing right and wrong)</li>
+<li>Dependency injection rules (constructor only, never field injection — show the <code>@Autowired</code> that should never appear)</li>
+<li>Method complexity limits (max 30 lines, max 5 parameters, cyclomatic complexity under 10)</li>
+<li>Error handling flow (which layer throws, which layer catches, how errors map to responses)</li>
+<li>Testing standards (framework, assertion style, mocking approach, test data strategy)</li>
+</ul>
+
+<p>Each section ends with a checklist. Not for you — for the agent. The agent reads the checklist, writes the code, then reviews its own output against the checklist before presenting it to you.</p>
+
+<p>This is the mechanism that converts review from a human activity to an automated one. The agent self-reviews against a spec you wrote once.</p>
+
+<p><strong>Layer 3: Task Playbooks.</strong> A conventions spec tells the agent <em>how</em> to write code. Playbooks tell it <em>what</em> to do for common tasks, step by step.</p>
+
+<p>Adding a new entity? The playbook says: (1) create the domain interface in the model module, (2) create the persistence record in the datastore module, (3) write the database migration, (4) create the repository, (5) create the service in the shared module, (6) create request/response DTOs, (7) write tests following TDD. Each step includes the exact file path, the exact annotations, and the exact import statements.</p>
+
+<p>Adding a REST endpoint? Different playbook. Adding a background job? Different playbook. Adding an event consumer? Different playbook.</p>
+
+<p>Every playbook ends with a "common mistakes" section. These aren't hypothetical — they're the mistakes you've already seen AI agents make with your codebase. Document them once. The agent reads them every time.</p>
+
+<p>The playbook pattern works because AI agents are remarkably good at following explicit instructions and remarkably bad at inferring implicit ones. A playbook converts the implicit into the explicit. The agent stops guessing what file to create and starts following a recipe that produces the right outcome.</p>
+
+<p><strong>Layer 4: Automated Enforcement.</strong> Everything above is advisory. The agent <em>should</em> follow the conventions spec. The agent <em>should</em> follow the playbooks. But "should" doesn't survive contact with a 200k-token context window and a complex multi-file task.</p>
+
+<p>This is where automated enforcement closes the loop.</p>
+
+<p>Three mechanisms, in order of feedback speed:</p>
+
+<p><em>Hooks.</em> Configure your agent's post-write hooks to run a formatter on every file save. The agent writes code, the hook reformats it, the agent never presents unformatted code. This is invisible quality enforcement — the agent doesn't even know it's happening. The formatting debate disappears.</p>
+
+<p>In Claude Code, this looks like a settings file that triggers your formatter after every <code>Write</code> or <code>Edit</code> operation:</p>
+
+<Fragment set:html={`<pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd $(git rev-parse --show-toplevel) && mvn spotless:apply -q 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>`} />
+
+<p>The agent writes, the formatter fires, the output is always formatted. Zero review cycles wasted on whitespace.</p>
+
+<p><em>Architecture tests.</em> Write tests that enforce structural rules at compile time. Controllers don't access repositories directly. No field injection anywhere. No circular dependencies between packages. These tests run as part of the regular test suite — when the agent runs tests (which it should after every change), boundary violations fail immediately with clear error messages.</p>
+
+<p>In Java, ArchUnit does this. In TypeScript, ESLint with architectural rules. In Go, dependency analysis tools. The language doesn't matter. The principle does: structural rules that the agent can violate and immediately detect through test failure.</p>
+
+<p><em>CI pipeline.</em> The final gate. Format check, lint, architecture rules, full test suite. The CI pipeline should be generated alongside the project, pre-configured for the exact infrastructure the project uses. If the project uses PostgreSQL, the CI spins up PostgreSQL. If it uses Kafka, the CI spins up Kafka. No "works on my machine" failures.</p>
+
+<p>The CI pipeline is the ultimate self-review mechanism. The agent can run the same checks locally before pushing. When it does, it's reviewing its own work against the same criteria CI will enforce. The human review that remains is genuinely about logic, design, and intent — the things humans are actually good at.</p>
+
+<p><strong>Layer 5: Testing Infrastructure.</strong> This is the layer most scaffolding gets catastrophically wrong. It's also the layer that, done right, makes human review almost entirely unnecessary. Because tests aren't just verification. Tests are the mechanism by which the agent reviews its own work.</p>
+
+<p>Start with TDD as an agent instruction. Not a suggestion. A rule. The agent writes the test <em>first</em>, runs it, watches it fail, then writes the implementation until the test passes. This isn't philosophical — it's mechanical. The failing test defines the acceptance criteria. The passing test proves the criteria are met. The agent has reviewed its own work before you ever see it.</p>
+
+<p>This sounds obvious. In practice, AI agents don't do it unless you tell them to. Left to their defaults, agents write the implementation first, then write a test that validates whatever they just built. That test will always pass. It proves nothing. It's a mirror, not a specification.</p>
+
+<p>The TDD instruction in your context file should be explicit:</p>
+
+<pre><code>TESTING WORKFLOW:
+1. Write the test FIRST — define expected behavior
+2. Run it — confirm it FAILS (a test that passes immediately is suspect)
+3. Write the minimum implementation to make it pass
+4. Run it again — confirm it PASSES
+5. Refactor if needed — tests must still pass
+6. Never modify a test to make it pass — fix the implementation</code></pre>
+
+<p>That last line is the most important rule in the entire scaffolding. AI agents, when faced with a failing test, will sometimes "fix" the test by weakening the assertion or changing the expected value. This is catastrophic. It turns the test suite into a rubber stamp. The rule must be explicit and unconditional: if the test fails, the implementation is wrong. Fix the implementation. Never the test.</p>
+
+<p>The second critical instruction is <em>run one test at a time</em>. Not the full suite. When the agent runs 200 tests and 3 fail, the error output is noisy, the agent gets confused, and it starts making shotgun changes. When it runs one test and it fails, the error is clear, the fix is obvious, and the agent stays focused. Full suite runs happen at the end, as a final verification. During development, one test at a time.</p>
+
+<p>Beyond TDD workflow, agents write the wrong <em>kind</em> of tests. They use in-memory databases instead of containers. They mock everything instead of testing real integrations. They write tests against implementation details instead of behavior. They name tests <code>testCreate</code> instead of something that explains what went wrong when it fails.</p>
+
+<p>The fix is a testing guide that specifies, for every layer of the application, exactly how to test it. Service layer: unit tests with a mocking framework, mock the repository, test the business logic. Repository layer: integration tests against a real database running in a container — not H2, not SQLite, not an in-memory substitute. The real database engine your production code uses, running in a container that starts and stops with the test. Controller layer: web layer tests that mock the service and test HTTP serialization. Background jobs: unit tests that verify idempotency. Event consumers: tests that verify deserialization and duplicate handling.</p>
+
+<p>Each layer gets a full, copy-paste-ready test template. Not a description of what a test should look like. The actual test, with the actual annotations, the actual base classes, and the actual assertion patterns. When the agent needs to write a repository test, it copies the template and modifies it. The test structure, the container setup, the assertion style — all predetermined by the template.</p>
+
+<p>Test naming matters more than most teams realize. A test named <code>testCreateUser</code> tells you nothing when it fails. A test named <code>createUser_duplicateEmail_throwsConflict</code> tells you exactly what broke. The naming convention should be in your conventions spec: <code>methodName_scenario_expectedResult</code>. When a test fails in CI, the failure message becomes self-documenting. The agent doesn't need to investigate — the name tells it what the test expected and what scenario triggered the failure.</p>
+
+<p>Then there are the anti-patterns. Document the specific testing mistakes AI agents make with your codebase. Not generic advice — the actual mistakes you've seen:</p>
+
+<pre><code>| Anti-Pattern                  | Why It Fails                        | Do This Instead                |
+|-------------------------------|-------------------------------------|--------------------------------|
+| Testing implementation details | Breaks on every refactor           | Test behavior and outcomes     |
+| Mocking value objects          | Unnecessary complexity              | Use real instances             |
+| Shared mutable test state      | Tests pollute each other            | Fresh fixtures per test        |
+| Sleep-based synchronization    | Flaky, slow                         | Use async testing utilities    |
+| Ignoring edge cases            | False confidence                    | Test nulls, empty, boundaries  |
+| Multiple assertions per test   | Hard to diagnose which failed       | One logical assertion per test |</code></pre>
+
+<p>The agent reads this table before writing any test. It's a negative checklist — a list of things to <em>not</em> do. Combined with the positive templates, it creates a corridor: the agent can't go wrong if it follows the template and avoids the anti-patterns.</p>
+
+<p>Finally, add a troubleshooting table. Map common test failures to their causes and fixes:</p>
+
+<pre><code>| Exception               | Cause                            | Fix                          |
+|--------------------------|----------------------------------|------------------------------|
+| BeanCreationException    | Missing mock for dependency      | Add @MockBean for the dep    |
+| Connection refused       | Container not started            | Add @Testcontainers          |
+| 404 on endpoint test     | Wrong URL or missing @Controller | Check @RequestMapping path   |
+| NullPointerException     | Dependency not injected          | Check constructor wiring     |</code></pre>
+
+<p>When the agent's test fails, it looks up the exception, finds the fix, and applies it — without asking you. Self-diagnosing tests. This is the single highest-leverage pattern for reducing agent-human round trips. The agent encounters an error, consults the table, fixes the issue, re-runs the test. No human in the loop.</p>
+
+<p>The last piece is giving the agent structured access to test results. Raw test output — pages of Maven Surefire or pytest output — is noisy and hard to parse. If your agent supports tool integrations, wrap your test runner in a tool that returns structured results: how many passed, how many failed, which ones failed, and the failure messages. The agent reads structured data, not a log dump. It knows immediately what to fix.</p>
+
+<Fragment set:html={`<pre><code>{
+  "tests_run": 42,
+  "passed": 41,
+  "failed": 1,
+  "failures": [
+    {
+      "test": "createOrder_insufficientStock_returnsConflict",
+      "message": "Expected status 409 but got 500",
+      "class": "OrderControllerTest"
+    }
+  ]
+}</code></pre>`} />
+
+<p>That response tells the agent everything. The test name says what was expected. The message says what happened. The class says where to look. The agent fixes the implementation, re-runs that one test, and moves on.</p>
+
+<h3>The Self-Review Loop</h3>
+
+<p>These five layers create a closed loop. The TDD workflow is the engine at its center. The agent:</p>
+
+<ol>
+<li>Reads the architecture map and conventions spec before writing anything</li>
+<li>Follows the task playbook for the specific operation</li>
+<li>Writes the test first — defines expected behavior</li>
+<li>Runs the test — confirms it fails</li>
+<li>Writes the implementation, automatically formatted by the hook</li>
+<li>Runs the test again — if it fails, consults the troubleshooting table and fixes the implementation (never the test)</li>
+<li>Runs the full test suite, which includes architecture enforcement</li>
+<li>Repeats until all tests pass</li>
+</ol>
+
+<p>At no point in this loop does the agent need human intervention for convention violations, formatting, architecture boundaries, or test correctness. The project scaffolding handles all of it. The TDD cycle means the agent has <em>proven</em> its code works against a specification it wrote before the implementation existed. The architecture tests mean it hasn't violated structural rules. The hooks mean it's formatted. The troubleshooting table means it fixed its own failures.</p>
+
+<p>What's left for you to review? The actual design decisions. The business logic. Whether the feature does what it should. The things that require understanding <em>intent</em>, not enforcing <em>consistency</em>.</p>
+
+<p>That's a review worth doing.</p>
+
+<h3>What Most Scaffolding Gets Wrong</h3>
+
+<p>Three patterns I see teams fall into, all of them counterproductive:</p>
+
+<p><strong>Vague instructions.</strong> "Follow SOLID principles." "Write clean code." "Use best practices." These mean nothing to an agent. They mean different things to different humans. They produce code that's defensible — "well, I was following best practices!" — but not consistent. Replace every vague instruction with a concrete example. Show the code. Show the wrong code next to it. Leave no room for interpretation.</p>
+
+<p><strong>Over-reliance on the system prompt.</strong> Teams dump their conventions into the agent's system prompt or a single massive context file and expect it to work. It doesn't. Context windows are limited. Attention degrades over long documents. A 3,000-line conventions file in a system prompt is worse than five focused 200-line documents loaded contextually. The architecture map is always loaded. The conventions spec is always loaded. The task playbook is loaded when the agent starts a specific task. The testing guide is loaded when the agent writes tests. Layer the context. Don't dump it.</p>
+
+<p><strong>No enforcement mechanism.</strong> The deadliest pattern. Beautiful documentation, zero enforcement. The agent reads the conventions, generates code that mostly follows them, and the 15% that doesn't becomes your review burden. Without hooks, architecture tests, and CI, conventions are suggestions. Suggestions don't scale.</p>
+
+<h3>Making It Language-Agnostic</h3>
+
+<p>Everything described here applies to any language and framework. The patterns are universal:</p>
+
+<p>The architecture map works whether your project is Java modules, Python packages, Go modules, or TypeScript workspaces. The dependency direction table is the same concept everywhere.</p>
+
+<p>The conventions spec covers whatever idioms your language favors. In Java, it's constructor injection and immutable value objects. In Python, it's type hints and dataclasses. In Go, it's interface composition and error returns. In TypeScript, it's discriminated unions and readonly properties. The spec's structure is identical — the examples change.</p>
+
+<p>Task playbooks work because every project has recurring operations. Adding an entity, adding an endpoint, adding a background job — the steps differ by language but the pattern of step-by-step instructions with code snippets is universal.</p>
+
+<p>Hooks work with any formatter. Prettier for TypeScript. Black for Python. <code>gofmt</code> for Go. Spotless for Java. The trigger mechanism depends on your agent, but every major agent supports post-write hooks.</p>
+
+<p>Architecture tests exist in every ecosystem. ArchUnit for Java. <code>depcheck</code> and custom ESLint rules for TypeScript. <code>go vet</code> and custom analyzers for Go. The concept — compile-time structural enforcement — is universal even when the tooling differs.</p>
+
+<p>The testing infrastructure layer adapts to your test framework. Jest, pytest, Go's testing package, JUnit — they all support the same concepts: TDD workflow, unit tests with mocks, integration tests with containers, layer-specific test patterns, structured test output. The anti-patterns table works in any language — testing implementation details instead of behavior is a universal mistake, not a Java one.</p>
+
+<h3>The Compound Effect</h3>
+
+<p>Each layer alone provides marginal improvement. Together, they compound.</p>
+
+<p>The agent reads the architecture map and knows where to put the file. The conventions spec tells it how to write the code. The playbook tells it what steps to follow. The TDD workflow makes it prove the code works before presenting it. The hook formats the output. The architecture test catches boundary violations. The troubleshooting table fixes failures. The structured test output tells it exactly what broke. CI confirms everything.</p>
+
+<p>The result isn't an agent that never makes mistakes. It's an agent whose mistakes are caught and corrected <em>by the infrastructure you built once</em>, not by the review you perform every time.</p>
+
+<p>I've watched an AI agent generate a new endpoint, run the tests, catch an architecture violation — it accessed a repository directly from the controller — fix it by routing through the service layer, re-run the tests, and present working code. Forty seconds. No human involved in the quality loop. The review that happened afterwards was about whether the API design made sense for the product. That's a review worth having.</p>
+
+<h3>The Real Metric</h3>
+
+<p>The question isn't "did the AI write good code?" The question is "how many review cycles did the human need?"</p>
+
+<p>Without scaffolding: 3-5 cycles. Formatting. Wrong patterns. Wrong directory. Wrong test approach. Wrong imports. Each cycle is a context switch, a comment, a wait, another review.</p>
+
+<p>With scaffolding: 0-1 cycles. The agent's first output follows conventions, is formatted, passes architecture tests, and has correct test patterns. The one remaining cycle — if needed — is about design intent, not mechanical compliance.</p>
+
+<p>The economic argument writes itself. But the more important argument is about what it does to the developer's experience. Reviewing an agent's formatting violations is soul-crushing. Reviewing an agent's design decisions is intellectually engaging. Scaffolding doesn't just save time. It saves the part of the job that makes engineering worth doing.</p>
+
+<h3>Start With Enforcement, Not Documentation</h3>
+
+<p>If you're going to do one thing tomorrow, don't start with the conventions spec. Start with the enforcement layer.</p>
+
+<p>Add a post-write hook that runs your formatter. Add one architecture test that catches the most common boundary violation. Add a CI step that runs your linter.</p>
+
+<p>Then work backwards. When the hook, the test, or CI catches something the agent keeps getting wrong, document the convention. When you document the convention, add it to the architecture map. When you've documented three related conventions, extract a playbook.</p>
+
+<p>The scaffolding builds itself from the enforcement outward. You don't need to write 3,000 lines of documentation before seeing results. You need one hook, one test, one CI step. The rest follows from the patterns that emerge.</p>
+
+<h3>What This Means for Your Team</h3>
+
+<p>Five years ago, the senior engineer's job was writing the hardest code. Two years ago, it shifted to reviewing AI-generated code. The next shift is already happening: the senior engineer's job is building the scaffolding that makes the AI's code reviewable in seconds instead of minutes.</p>
+
+<p>This is infrastructure work. It's not glamorous. It doesn't ship features. But it's the highest-leverage investment a team can make right now, because it multiplies the output of every developer using an AI agent — which, increasingly, is every developer.</p>
+
+<p>The five layers — architecture map, conventions spec, task playbooks, automated enforcement, testing infrastructure — are not a framework. They're a checklist. Pick the layer where your team wastes the most review time and build that one first. The rest can follow.</p>
+
+<p>Stop reviewing your agent's formatting. Stop correcting its import patterns. Stop fixing its test infrastructure. Build a project that makes those reviews unnecessary.</p>
+
+<p>You have better things to review.</p>
+
+<h3>See It In Practice</h3>
+
+<p>Everything described in this article is implemented in a working companion repository: <a href="https://github.com/arianlopezc/agent-ready-scaffolding">agent-ready-scaffolding</a>. It's a Java multi-module Maven project with all five layers — architecture map, conventions spec, task playbooks, automated enforcement, and testing infrastructure — configured for Claude Code, Cursor, Windsurf, and GitHub Copilot.</p>
+
+<p>Clone it, open it in your AI coding agent, and ask it to add a new entity. Watch what happens when the scaffolding does its job.</p>
+
+<hr />
+
+<p><em>If this resonated, I'd love to hear how you're scaffolding your projects for AI agents. The patterns are still emerging and every team's approach adds to the collective knowledge.</em></p>
+
+</BlogPost>
