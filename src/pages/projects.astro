@@ -5,7 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 <BaseLayout title="Projects — Arian Lopez" description="Open source projects by Arian Lopez.">
   <section class="projects-page">
     <h1>Projects</h1>
-    <p class="projects-intro">Open source tools I've built.</p>
+    <p class="projects-intro">Things I've built.</p>
 
     <div class="project-card">
       <div class="project-header">
@@ -33,6 +33,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
       <div class="project-links">
         <a href="https://github.com/arianlopezc/Trabuco" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+      </div>
+    </div>
+
+    <div class="project-card">
+      <div class="project-header">
+        <span class="project-name">Minute News</span>
+        <span class="project-tag">Live</span>
+      </div>
+      <p class="project-description">
+        An AI-powered live news platform that indexes and structures news from trusted sources &mdash; without summarizing or rewriting articles. Every story links back to the original publisher, keeping readers informed while respecting the journalism behind the reporting.
+      </p>
+      <div class="project-details">
+        <h3>Key features</h3>
+        <ul>
+          <li><strong>Live update cycle</strong> &mdash; A 60-second polling loop with pre-fetching, countdown timer, and horizontal card carousel that merges new stories into the main feed automatically.</li>
+          <li><strong>Voice reading</strong> &mdash; Text-to-speech via OpenAI TTS with ambient sound modes (chime, tick, pulse) for a broadcast-like experience.</li>
+          <li><strong>Personalized filtering</strong> &mdash; Multi-select category bar with auth-aware persistence across sessions, backed by Supabase and Apple Sign-In.</li>
+        </ul>
+      </div>
+      <div class="project-tech">
+        <span class="tech-tag">Astro</span>
+        <span class="tech-tag">Preact</span>
+        <span class="tech-tag">Cloudflare Pages</span>
+        <span class="tech-tag">Supabase</span>
+        <span class="tech-tag">Trabuco CLI</span>
+        <span class="tech-tag">Java</span>
+        <span class="tech-tag">Spring Boot</span>
+      </div>
+      <div class="project-links">
+        <a href="https://minutenews.live" target="_blank" rel="noopener">Visit Minute News &rarr;</a>
       </div>
     </div>
   </section>
