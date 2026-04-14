@@ -1,0 +1,121 @@
+---
+import BlogPost from '../../layouts/BlogPost.astro';
+---
+
+<BlogPost
+  title="Your Next AI Agent Shouldn't Start From Scratch"
+  date="2026-04-13"
+  description="One command generates a production-ready Spring Boot AI agent with guardrails, multi-agent orchestration, MCP, A2A, and circuit breakers already wired."
+  readingTime="4 min read"
+>
+
+<p>Every engineer who has built an AI agent knows the first week. You pick Spring AI or LangChain, follow a quickstart, get a chatbot running, and feel pretty good about it. Then the real work shows up. Where should guardrails live? How do tools get organized? What happens when the model is down? How do other agents talk to yours?</p>
+
+<p>Suddenly you're not building the thing that makes your agent valuable. You're building plumbing.</p>
+
+<p>After spending a few months studying production AI agent patterns, from Anthropic's own recommendations to real-world multi-agent architectures, I noticed the hard part isn't the intelligence. It's everything around it. So I added an AI Agent module to <a href="https://github.com/arianlopezc/Trabuco">Trabuco</a>.</p>
+
+<h3>A Quick Refresher on Trabuco</h3>
+
+<p>If you haven't seen it before, Trabuco is an open-source CLI that generates production-ready Java multi-module Maven projects. You run <code>trabuco init</code>, answer a few questions, and get a fully wired project: Spring Boot, Spring Data JDBC, Flyway migrations, Testcontainers, circuit breakers, correlation IDs, architecture enforcement tests, and coding-agent integration. All configured, all working together. No boilerplate ritual.</p>
+
+<p>The AI Agent module extends that same philosophy to agent development. One command gives you a runnable Spring Boot application with the production scaffolding already in place, so you can focus on what makes your agent useful: the domain logic.</p>
+
+<h3>What You Get</h3>
+
+<pre><code>trabuco init --name=my-agent --group-id=com.company.agent \
+  --modules=Model,Shared,AIAgent</code></pre>
+
+<p>This generates a complete agent project, not a starter. The classes, configurations, tests, and task prompts are all there, ready to be customized.</p>
+
+<p>The agent itself comes with the patterns you expect from a production system. Your domain capabilities are <code>@Tool</code>-annotated Java methods that the LLM can invoke, and placeholder tools ship pre-wired so the pattern is visible from the first run. A primary agent handles user requests directly and delegates to a specialist agent for complex reasoning, following the orchestrator-worker pattern. A scratchpad captures the agent's reasoning trace, which is invaluable when you need to understand why a particular decision was made. A reflection service steps in on tool failures and decides whether to retry, suggest an alternative, escalate, or give up, instead of leaning on hardcoded retry counters. And for questions that don't need reasoning at all, a keyword-matched knowledge base answers FAQ-style queries without spending any LLM tokens.</p>
+
+<p>Security is wired into the request pipeline, not bolted on top. An input guardrail runs a classifier model that blocks prompt injection and off-topic requests before the main agent sees them. An output guardrail scans every response for PII (email, SSN, credit card, phone) before it leaves the process. Both live as Spring AI Advisors, which means you don't have to remember to invoke them. Request authentication, scope-based authorization, and rate limiting all sit in front of the guardrails.</p>
+
+<p>Integration with other systems is covered too. The agent exposes its tools through an MCP server, so Claude Code, Cursor, and other MCP-compatible clients can connect directly. A JSON-RPC 2.0 A2A protocol lets other agents discover and call yours through an Agent Card, with a full task lifecycle and server-sent events for streaming progress. Outbound webhooks with HMAC signatures notify registered subscribers when status changes. And when the LLM provider has a bad day, Resilience4j circuit breakers wrap every model call with real fallback responses, so your agent degrades gracefully instead of throwing 500s. The whole application even starts without an API key, serving infrastructure endpoints and returning a helpful message from <code>/chat</code> instead of failing.</p>
+
+<p>Two of these are worth pulling out, because they're the ones that usually take the longest to get right.</p>
+
+<h3>Multi-Agent Done Right</h3>
+
+<p>The agent follows Anthropic's orchestrator-worker pattern. The primary agent handles user requests directly when a tool call will do. When a question needs specialized reasoning, it delegates to a specialist agent. The trick is that delegation is not a framework feature. It's just another tool call.</p>
+
+<pre><code>User message → PrimaryAgent (orchestrator)
+                    │
+                    ├── calls domain tools directly (simple queries)
+                    │
+                    └── calls askSpecialistAgent tool (complex queries)
+                              │
+                              └── SpecialistAgent (worker)
+                                      └── calls its own tools</code></pre>
+
+<p>The primary agent decides when to hand off the same way it decides any other tool call. The specialist never calls back, which means you can't accidentally build an infinite loop. Each agent has its own <code>ChatClient</code>, its own system prompt, and its own circuit breaker. The specialist can run on a different model (a cheaper or faster one) by wiring a <code>@Qualifier("specialistChatModel")</code> bean.</p>
+
+<p>That's all it takes. Spring AI handles the protocol. The LLM handles the decision. You handle the domain.</p>
+
+<h3>Guardrails in the Request Pipeline</h3>
+
+<p>The usual way to bolt on guardrails is an afterthought: a validation step before the agent runs, a regex after. The generated project wires them as Spring AI Advisors, which means every chat request flows through them automatically.</p>
+
+<pre><code>Request → ApiKeyAuthFilter → ScopeInterceptor → RateLimiter
+        → InputGuardrailAdvisor (LLM) → Agent
+        → OutputGuardrailAdvisor (regex) → Response</code></pre>
+
+<p>The input advisor runs a separate classifier model that labels the message as allowed or blocked. The output advisor runs regex checks for PII before the response ever leaves the process. Neither lives inside your agent code. You don't have to remember to invoke them.</p>
+
+<h3>Why Scaffold Instead of a Library?</h3>
+
+<p>It's a fair question. Why not ship a Spring AI starter that auto-configures all of this?</p>
+
+<p>Because the value isn't in the wiring. It's in having the patterns visible and editable. When your team needs to change how guardrails work, they open <code>InputGuardrailAdvisor.java</code> and change it. When they want a third agent, they follow the pattern they can already see in <code>PrimaryAgent</code> and <code>SpecialistAgent</code>. Nothing is hidden behind auto-configuration. Nothing lives in a jar you can't read.</p>
+
+<p>Scaffolding gives you ownership from day one. Libraries give you dependencies.</p>
+
+<h3>Built For Coding Agents</h3>
+
+<p>This is the part I think matters most for anyone using Claude Code, Cursor, GitHub Copilot, or Codex on their agent project.</p>
+
+<p>Every generated project includes a set of task prompts in <code>.ai/prompts/</code>. These are step-by-step guides that teach a coding agent how to extend <em>this specific project</em>: your package names, your module structure, your conventions.</p>
+
+<p>The prompts cover the operations you actually perform while building an agent. There are guides for the agent-specific work, like adding a new <code>@Tool</code> method with the right annotations and tests, registering a new A2A skill with the agent card and task router, adding a classification rule to the input guardrail, or adding a token-free knowledge base entry. And there are guides for the project-level work that every module touches, like creating a service in the Shared module with proper injection, writing a custom SQL query that follows project conventions, or writing a Flyway migration with the expected naming and indexing rules.</p>
+
+<p>The <code>CLAUDE.md</code> file at the project root references these prompts by path. The agent discovers them through progressive disclosure. When you ask it to add a tool, it reads <code>add-tool.md</code> first, then writes code that fits.</p>
+
+<p>Conventions alone aren't enough, though. So the project also ships with ArchUnit tests that run at build time. If a coding agent writes a record where an Immutable interface should be, the build fails. If it adds a foreign key constraint, the build fails. If it uses field injection, the build fails. The feedback loop is instant, and it doesn't require a human reviewer.</p>
+
+<p>That combination, prompts for guidance and tests for enforcement, is what makes the agent output reliable. The prompts describe the pattern. The tests make sure it gets followed.</p>
+
+<h3>Getting Started</h3>
+
+<pre><code># Install
+curl -sSL https://raw.githubusercontent.com/arianlopezc/Trabuco/main/scripts/install.sh | bash
+
+# Generate
+trabuco init --name=my-agent --group-id=com.company.agent \
+  --modules=Model,Shared,AIAgent --database=postgresql
+
+# Run without an API key (infrastructure endpoints only)
+cd my-agent && mvn spring-boot:run -pl AIAgent
+
+# Run with full AI capabilities
+ANTHROPIC_API_KEY=your-key mvn spring-boot:run -pl AIAgent</code></pre>
+
+<p>You can also add the AI Agent module to an existing Trabuco project:</p>
+
+<pre><code>trabuco add AIAgent</code></pre>
+
+<p>If you want your coding agent to generate projects for you directly, the CLI ships as an MCP server:</p>
+
+<pre><code>claude mcp add trabuco -- npx -y trabuco-mcp</code></pre>
+
+<h3>Closing Thoughts</h3>
+
+<p>The AI Agent module gives you a starting point that would take a few weeks to build from scratch. Not because any individual piece is hard, but because getting them to work together correctly is where the time goes. Guardrails that integrate with the request pipeline. Circuit breakers with real fallbacks. Multi-agent delegation that doesn't cycle. Graceful startup when the API key isn't set. None of it is glamorous work, and all of it takes longer than you expect the first time.</p>
+
+<p>The scaffold handles that part. You get to spend your time on the agent itself.</p>
+
+<p>Trabuco is open source under the MIT License. Feedback is welcome: open an issue, submit a PR, or give it a star if it ends up saving you time.</p>
+
+<p><a href="https://github.com/arianlopezc/Trabuco">GitHub</a> · <a href="https://www.npmjs.com/package/trabuco-mcp">npm</a></p>
+
+</BlogPost>

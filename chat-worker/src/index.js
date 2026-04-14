@@ -39,11 +39,14 @@ PROJECTS:
 Trabuco is Arian's open-source CLI built in Go that generates production-ready, multi-module Java Maven projects and autonomously migrates legacy Spring Boot applications to clean modular architecture using AI.
 
 Key features:
-- Project generation: Scaffolds multi-module Java Maven projects with 10+ configurable modules (Model, SQLDatastore, Shared, API, Worker, EventConsumer, MCP, etc.).
+- Project generation: Scaffolds multi-module Java Maven projects with 10+ configurable modules (Model, SQLDatastore, Shared, API, Worker, EventConsumer, MCP, AIAgent, etc.).
+- AI Agent module (v1.7.0+): One command generates a runnable Spring Boot AI agent with production scaffolding already wired — tool calling via Spring AI @Tool annotations, LLM-based input guardrails (prompt injection blocking), regex-based output guardrails (PII detection), primary-and-specialist multi-agent orchestration following Anthropic's orchestrator-worker pattern, an MCP server exposing tools to Claude Code and Cursor, JSON-RPC 2.0 A2A endpoints with task lifecycle and SSE streaming, Resilience4j circuit breakers with real fallbacks, scratchpad reasoning traces, reflection-based error recovery, HMAC-signed outbound webhooks, and graceful degradation (the app starts even without an ANTHROPIC_API_KEY).
 - AI migration pipeline: A 10-stage pipeline using Anthropic's SDK that converts legacy Spring Boot apps to modular architecture — transforming JPA to Spring Data JDBC, generating SQL migrations, and restructuring services with checkpoint recovery, rollback, and full cost transparency.
-- Dual-layer MCP integration: The CLI exposes 11 MCP tools for AI agents. Generated projects include their own MCP servers, enabling a two-tier AI-native development ecosystem.
+- Dual-layer MCP integration: The CLI exposes MCP tools for AI agents. Generated projects include their own MCP servers, enabling a two-tier AI-native development ecosystem.
+- Task prompts for coding agents: Every generated project includes .ai/prompts/ with step-by-step guides (add-tool, add-skill, add-guardrail-rule, add-knowledge-entry, add-service, add-repository-method, add-migration, add-entity, add-endpoint, add-job, add-event) so Claude Code, Cursor, Copilot, and Codex know how to extend the specific project's conventions.
+- ArchUnit enforcement: Build-time architecture tests catch convention violations automatically (no records in DTOs, no foreign keys, no field injection, Immutables must have JSON annotations).
 - Generates context files for 5 AI coding assistants: Claude Code, Cursor, GitHub Copilot, Windsurf, and Cline.
-- Tech stack: Go, Anthropic SDK, MCP, Java, Maven, Spring Boot.
+- Tech stack: Go, Anthropic SDK, MCP, Java, Maven, Spring Boot, Spring AI.
 
 2. MINUTE NEWS (minutenews.live):
 Minute News is Arian's AI-powered live news platform that indexes and structures news from trusted sources — without summarizing or rewriting articles. Every story links back to the original publisher, keeping readers informed while respecting the journalism behind the reporting.
@@ -57,21 +60,23 @@ Key features:
 
 ---
 
-TECHNICAL WRITING (7 articles):
+TECHNICAL WRITING (8 articles):
 
-1. "Your AI Agent Doesn't Need More Guardrails. It Needs a Better Project." (Feb 2026) — Five layers of project scaffolding that reduce AI code review to near-zero: architecture maps, conventions specs, task playbooks, automated enforcement, and testing infrastructure.
+1. "Your Next AI Agent Shouldn't Start From Scratch" (Apr 2026) — Introducing the AI Agent module in Trabuco. One command generates a production-ready Spring Boot agent with guardrails, multi-agent orchestration, MCP, A2A, circuit breakers, and task prompts for coding agents already wired. Covers why scaffolding beats libraries, how the orchestrator-worker pattern is implemented as a tool call, and how ArchUnit tests enforce conventions at build time.
 
-2. "I Built an MCP Tool That Was Confidently Wrong. Here's What I Learned About Designing for AI Agents." (Feb 2026) — Lessons from shipping a tool that made AI agents worse at their job. Three wrong recommendations before understanding why — and how to design MCP tools that give agents the context they need.
+2. "Your AI Agent Doesn't Need More Guardrails. It Needs a Better Project." (Feb 2026) — Five layers of project scaffolding that reduce AI code review to near-zero: architecture maps, conventions specs, task playbooks, automated enforcement, and testing infrastructure.
 
-3. "Your AI Agent Writes Great Code. Your Project Just Can't Tell It the Rules." (Feb 2026) — Why you need to stop reviewing your agent's generated code for style violations. Not because code quality doesn't matter — because the way you're enforcing it doesn't work.
+3. "I Built an MCP Tool That Was Confidently Wrong. Here's What I Learned About Designing for AI Agents." (Feb 2026) — Lessons from shipping a tool that made AI agents worse at their job. Three wrong recommendations before understanding why — and how to design MCP tools that give agents the context they need.
 
-4. "I Built a CLI That Generates Production-Ready Java Projects in Seconds" (Feb 2026) — About why AI-generated projects fail teams due to inconsistency, and how Trabuco solves this with deterministic architecture generation.
+4. "Your AI Agent Writes Great Code. Your Project Just Can't Tell It the Rules." (Feb 2026) — Why you need to stop reviewing your agent's generated code for style violations. Not because code quality doesn't matter — because the way you're enforcing it doesn't work.
 
-5. "Rate Limiting a Tenant's Import Data with a Leaky Bucket Strategy" (May 2023) — How the Salesforce Commerce Cloud team repurposed the leaky bucket algorithm to rate-limit multi-tenant data imports, using Redis for distributed state synchronization.
+5. "I Built a CLI That Generates Production-Ready Java Projects in Seconds" (Feb 2026) — About why AI-generated projects fail teams due to inconsistency, and how Trabuco solves this with deterministic architecture generation.
 
-6. "Accelerating CRUD Async Operations with Redis and Queues" (2023) — A write-back caching strategy combined with read-through cache using Redis and job queues to accelerate CRUD operations. Built a proof-of-concept with NodeJS, NestJS, TypeScript, Redis, BullJS, and MongoDB.
+6. "Rate Limiting a Tenant's Import Data with a Leaky Bucket Strategy" (May 2023) — How the Salesforce Commerce Cloud team repurposed the leaky bucket algorithm to rate-limit multi-tenant data imports, using Redis for distributed state synchronization.
 
-7. "Lessons Learned Using Spring Data Redis" (Oct 2021) — Debugging a hidden memory leak caused by Spring Data Redis's CrudRepository creating invisible SET index entries. The team switched to RedisTemplate for better performance (milliseconds to nanoseconds) and memory stability.
+7. "Accelerating CRUD Async Operations with Redis and Queues" (2023) — A write-back caching strategy combined with read-through cache using Redis and job queues to accelerate CRUD operations. Built a proof-of-concept with NodeJS, NestJS, TypeScript, Redis, BullJS, and MongoDB.
+
+8. "Lessons Learned Using Spring Data Redis" (Oct 2021) — Debugging a hidden memory leak caused by Spring Data Redis's CrudRepository creating invisible SET index entries. The team switched to RedisTemplate for better performance (milliseconds to nanoseconds) and memory stability.
 
 ---
 
@@ -80,7 +85,7 @@ Languages: Java, Go, Python, JavaScript, TypeScript
 Frameworks: Spring Boot, NestJS, Node.js, Angular, Express
 Cloud & Infrastructure: AWS (multi-region), GCP, Docker, CI/CD
 Data & Storage: PostgreSQL, Redis, Flyway, MongoDB, Firebase
-AI & Developer Tooling: Claude Code, Cursor, Anthropic SDK, Model Context Protocol (MCP)
+AI & Developer Tooling: Claude Code, Cursor, Anthropic SDK, Spring AI, Model Context Protocol (MCP), Agent-to-Agent (A2A) protocol, Resilience4j
 
 ---
 
