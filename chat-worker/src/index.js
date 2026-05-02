@@ -36,17 +36,15 @@ PWC (Senior Software Engineer, Jul 2018 – Feb 2020):
 PROJECTS:
 
 1. TRABUCO (github.com/arianlopezc/Trabuco):
-Trabuco is Arian's open-source CLI — and a Claude Code plugin — that generates production-ready Java multi-module Maven projects along with the AI context that coding agents need to extend them. One command produces a fully wired Spring Boot codebase plus task-specific prompts, a code-quality specification, and per-agent rule files already configured for Claude Code, Codex, Cursor, and GitHub Copilot.
+Trabuco is Arian's open-source production-ready CLI for generating Java multi-module Maven projects. It's built around deep coding-agent integration — and one of the modules it can scaffold is a runnable AI agent itself.
 
-Key features:
-- Production-grade scaffolding: Spring Boot 3.4 + Java 21/25 with Spring Data JDBC (no JPA), Flyway migrations, virtual threads, Testcontainers integration tests, Resilience4j circuit breakers, Spotless formatting, ArchUnit boundary tests, correlation-ID tracing, Prometheus metrics, OpenAPI, and a sanitized global exception handler.
-- Modular architecture: Clean compile-time boundaries between Model, SQLDatastore/NoSQLDatastore, Shared, API, Worker, EventConsumer, and AIAgent — API physically cannot import Worker code. PostgreSQL/MySQL/MongoDB/Redis configured with Docker Compose; JobRunr for background jobs; Kafka, RabbitMQ, AWS SQS, or GCP Pub/Sub for events.
-- AI Agent module: Spring AI scaffolding for tool calling, LLM input/output guardrails, multi-agent orchestration, knowledge-base integration, an MCP server endpoint, A2A (Agent-to-Agent) protocol, streaming responses, webhook callbacks, scope-based authorization, and rate limiting — wired and testable from the first commit.
-- OIDC Resource Server scaffolding: Spring Security 6 dual filter chain, JWT validation, scope-mapped authorities, RFC 7807 ProblemDetail handlers, and RSA-signed e2e tests. Ships dormant — flip trabuco.auth.enabled=true to validate tokens from Keycloak, Auth0, Okta, Cognito, or generic OIDC.
-- Migration of existing repos: 'trabuco migrate' runs a 14-phase orchestrated flow with specialist subagents, per-phase approval gates, and atomic rollback via git tags. Transforms a Spring Boot 2.x or 3.x repo in place into Trabuco's multi-module structure.
-- AI collaboration layer: .ai/prompts/ task guides (add-entity, add-endpoint, add-service, add-event, add-job, add-tool, etc.) and a JAVA_CODE_QUALITY.md specification covering architecture boundaries, exception handling, datastore performance, and testing standards. Per-agent rule files for Claude Code (CLAUDE.md), Codex (AGENTS.md), Cursor (.cursor/rules/), and GitHub Copilot (.github/instructions/).
-- Claude Code plugin: Published in Anthropic's community marketplace. Ships 8 skills (/trabuco:new-project, /trabuco:design-system, /trabuco:add-module, /trabuco:extend, /trabuco:migrate, /trabuco:doctor, /trabuco:suggest, /trabuco:sync), 17 specialist subagents (architect, AI-agent expert, migration orchestrator, 14 migration phase specialists), and an MCP server with 25 tools.
-- Tech stack: Go, Anthropic SDK, MCP, A2A, Java 21+, Maven, Spring Boot 3.4, Spring AI, Spring Security 6.
+Production-ready by default:
+One command produces a fully wired Spring Boot 3.4 codebase with clean compile-time module boundaries (Model, SQLDatastore/NoSQLDatastore, Shared, API, Worker, EventConsumer, AIAgent), Spring Data JDBC, Flyway, virtual threads, Testcontainers, Resilience4j, ArchUnit boundary tests, Spotless, OpenAPI, correlation-ID tracing, and Prometheus metrics. PostgreSQL/MySQL/MongoDB/Redis via Docker Compose; JobRunr for background jobs; Kafka, RabbitMQ, AWS SQS, or GCP Pub/Sub for events. Trabuco also runs an orchestrated 14-phase migration ('trabuco migrate') that transforms a Spring Boot 2.x or 3.x repo in place into the same modular structure.
+
+Built for AI agents — and to build AI agents:
+Generated projects ship task prompts (.ai/prompts/), a JAVA_CODE_QUALITY.md specification, and per-agent rule files for Claude Code (CLAUDE.md), Codex (AGENTS.md), Cursor (.cursor/rules/), and GitHub Copilot (.github/instructions/) so each agent extends the project natively. Trabuco itself is a Claude Code plugin (in Anthropic's community marketplace) and an MCP server, so the CLI is callable from inside an agent's session. The AIAgent module scaffolds a runnable Spring AI agent with tool calling, LLM guardrails, multi-agent orchestration, knowledge-base integration, MCP server, A2A (Agent-to-Agent) protocol, streaming, webhooks, scope-based authorization, and rate limiting — wired and testable from the first commit.
+
+Tech stack: Go, Anthropic SDK, MCP, A2A, Java 21+, Maven, Spring Boot 3.4, Spring AI.
 
 ---
 
