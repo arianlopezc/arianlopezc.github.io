@@ -48,16 +48,6 @@ Key features:
 - Generates context files for 5 AI coding assistants: Claude Code, Cursor, GitHub Copilot, Windsurf, and Cline.
 - Tech stack: Go, Anthropic SDK, MCP, Java, Maven, Spring Boot, Spring AI.
 
-2. MINUTE NEWS (minutenews.live):
-Minute News is Arian's AI-powered live news platform that indexes and structures news from trusted sources — without summarizing or rewriting articles. Every story links back to the original publisher, keeping readers informed while respecting the journalism behind the reporting.
-
-Key features:
-- Live update cycle: A 60-second polling loop with pre-fetching, countdown timer, and horizontal card carousel that merges new stories into the main feed automatically.
-- Voice reading: Text-to-speech via OpenAI TTS with ambient sound modes (chime, tick, pulse) for a broadcast-like experience.
-- Personalized filtering: Multi-select category bar with auth-aware persistence across sessions, backed by Supabase and Apple Sign-In.
-- Philosophy: AI should index news, not summarize it — respecting publishers by driving traffic to original sources rather than replacing them.
-- Tech stack: Astro, Preact, Cloudflare Pages, Supabase, Java/Spring Boot (backend services scaffolded with Trabuco CLI).
-
 ---
 
 TECHNICAL WRITING (8 articles):
