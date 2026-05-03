@@ -39,12 +39,12 @@ PROJECTS:
 Trabuco is Arian's open-source production-ready CLI for generating Java multi-module Maven projects. It's built around deep coding-agent integration — and one of the modules it can scaffold is a runnable AI agent itself.
 
 Production-ready by default:
-One command produces a fully wired Spring Boot 3.4 codebase with clean compile-time module boundaries (Model, SQLDatastore/NoSQLDatastore, Shared, API, Worker, EventConsumer, AIAgent), Spring Data JDBC, Flyway, virtual threads, Testcontainers, Resilience4j, ArchUnit boundary tests, Spotless, OpenAPI, correlation-ID tracing, and Prometheus metrics. PostgreSQL/MySQL/MongoDB/Redis via Docker Compose; JobRunr for background jobs; Kafka, RabbitMQ, AWS SQS, or GCP Pub/Sub for events. Trabuco also runs an orchestrated 14-phase migration ('trabuco migrate') that transforms a Spring Boot 2.x or 3.x repo in place into the same modular structure.
+One command produces a fully wired Spring Boot codebase with clean compile-time module boundaries (Model, SQLDatastore/NoSQLDatastore, Shared, API, Worker, EventConsumer, AIAgent), Spring Data JDBC, Flyway, virtual threads, Testcontainers, Resilience4j, ArchUnit boundary tests, Spotless, OpenAPI, correlation-ID tracing, and Prometheus metrics. PostgreSQL/MySQL/MongoDB/Redis via Docker Compose; JobRunr for background jobs; Kafka, RabbitMQ, AWS SQS, or GCP Pub/Sub for events. Trabuco also runs an orchestrated 14-phase migration ('trabuco migrate') that transforms a Spring Boot 2.x or 3.x repo in place into the same modular structure.
 
 Built for AI agents — and to build AI agents:
 Generated projects ship task prompts (.ai/prompts/), a JAVA_CODE_QUALITY.md specification, and per-agent rule files for Claude Code (CLAUDE.md), Codex (AGENTS.md), Cursor (.cursor/rules/), and GitHub Copilot (.github/instructions/) so each agent extends the project natively. Trabuco itself is a Claude Code plugin (in Anthropic's community marketplace) and an MCP server, so the CLI is callable from inside an agent's session. The AIAgent module scaffolds a runnable Spring AI agent with tool calling, LLM guardrails, multi-agent orchestration, knowledge-base integration, MCP server, A2A (Agent-to-Agent) protocol, streaming, webhooks, scope-based authorization, and rate limiting — wired and testable from the first commit.
 
-Tech stack: Go, Anthropic SDK, MCP, A2A, Java 21+, Maven, Spring Boot 3.4, Spring AI.
+Tech stack: Go, Anthropic SDK, MCP, A2A, Java 21+, Maven, Spring Boot, Spring AI.
 
 ---
 
